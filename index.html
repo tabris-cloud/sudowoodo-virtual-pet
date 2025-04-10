@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudowoodo Virtual Pet</title>
+    <style>
+        body {
+            font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #e6d7b8;
+            color: #333;
+            padding: 20px;
+            user-select: none;
+        }
+        
+        .container {
+            background-color: #f5ecd5;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #5e8c31;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+        
+        .pet-container {
+            position: relative;
+            height: 320px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        #sudowoodo {
+            width: 200px;
+            height: 200px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            background-image: url('./images/tree.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        #animation {
+            width: 200px;
+            height: 200px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            background-image: url('./images/tree.gif');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .status-bars {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        
+        .status-bar {
+            flex: 1;
+            margin: 0 10px;
+        }
+        
+        .bar-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+        }
+        
+        .bar-container {
+            background-color: #eee;
+            border-radius: 10px;
+            height: 15px;
+            overflow: hidden;
+        }
+        
+        .bar {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        #nutrientsBar {
+            background-color: #5e8c31;
+        }
+        
+        #hydrationBar {
+            background-color: #4fa1d0;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            margin: 5px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+            border: none;
+            border-radius: 30px;
+        }
+        
+        #feedButton {
+            background-color: #5e8c31;  
+        }
+        
+        #waterButton {
+            background-color: #4fa1d0;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 8px rgba(0,0,0,0.15);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        .message {
+            min-height: 30px;
+            font-style: italic;
+            margin: 15px 0;
+            color: #666;
+        }
+        
+        .rock-particles {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #8b7355;
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .water-drops {
+            position: absolute;
+            width: 6px;
+            height: 10px;
+            background-color: #4fa1d0;
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sudowoodo Pet</h1>
+        
+        <div class="pet-container">
+            <!-- Static sprite will be displayed here -->
+            <div id="sudowoodo"></div>
+            <!-- Animation GIF will be displayed here when feeding/watering -->
+            <div id="animation"></div>
+        </div>
+        
+        <div class="status-bars">
+            <div class="status-bar">
+                <span class="bar-label">Nutrients</span>
+                <div class="bar-container">
+                    <div id="nutrientsBar" class="bar" style="width: 70%;"></div>
+                </div>
+            </div>
+            <div class="status-bar">
+                <span class="bar-label">Hydration</span>
+                <div class="bar-container">
+                    <div id="hydrationBar" class="bar" style="width: 50%;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="message" id="message">Your Sudowoodo is pretending to be a tree!</div>
+        
+        <div class="actions">
+            <button id="feedButton">Feed Berry</button>
+            <button id="waterButton">Water</button>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let sudowoodo = {
+            nutrients: 70,
+            hydration: 50,
+            name: "Sudowoodo"
+        };
+        
+        // DOM elements
+        const sudowoodoElem = document.getElementById('sudowoodo');
+        const animationElem = document.getElementById('animation');
+        const nutrientsBar = document.getElementById('nutrientsBar');
+        const hydrationBar = document.getElementById('hydrationBar');
+        const messageElem = document.getElementById('message');
+        const feedButton = document.getElementById('feedButton');
+        const waterButton = document.getElementById('waterButton');
+        
+        // Update status bars and message
+        function updateStats() {
+            nutrientsBar.style.width = `${sudowoodo.nutrients}%`;
+            hydrationBar.style.width = `${sudowoodo.hydration}%`;
+            
+            // Update message based on status
+            if (sudowoodo.nutrients < 30) {
+                messageElem.textContent = `${sudowoodo.name} looks hungry for minerals!`;
+            } else if (sudowoodo.hydration < 30) {
+                messageElem.textContent = `${sudowoodo.name} could use some water!`;
+            } else if (sudowoodo.nutrients > 90 && sudowoodo.hydration > 90) {
+                messageElem.textContent = `${sudowoodo.name} is thriving! (But still pretending to be a tree)`;
+            } else {
+                messageElem.textContent = `${sudowoodo.name} is doing well, standing perfectly still.`;
+            }
+        }
+        
+        // Decrease stats over time
+        setInterval(() => {
+            sudowoodo.nutrients = Math.max(0, sudowoodo.nutrients - 1);
+            sudowoodo.hydration = Math.max(0, sudowoodo.hydration - 1.5); // Hydration decreases faster
+            updateStats();
+        }, 5000);
+        
+        // Create particle effect
+        function createParticles(type, count) {
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = type === 'berry' ? 'rock-particles' : 'water-drops';
+                
+                // Random position around Sudowoodo
+                const randomAngle = Math.random() * Math.PI * 2;
+                const distance = 50 + Math.random() * 30;
+                const x = Math.cos(randomAngle) * distance;
+                const y = Math.sin(randomAngle) * distance;
+                
+                particle.style.left = `calc(50% + ${x}px)`;
+                particle.style.top = `calc(50% + ${y}px)`;
+                
+                document.querySelector('.pet-container').appendChild(particle);
+                
+                // Animate particle
+                setTimeout(() => {
+                    particle.style.opacity = '1';
+                    particle.style.transform = `translate(${Math.random() * 40 - 20}px, ${Math.random() * 60 + 20}px)`;
+                    particle.style.transition = 'all 1s ease-out';
+                    
+                    setTimeout(() => {
+                        particle.style.opacity = '0';
+                        setTimeout(() => {
+                            particle.remove();
+                        }, 500);
+                    }, 500);
+                }, Math.random() * 200);
+            }
+        }
+        
+        // Feed Sudowoodo
+        feedButton.addEventListener('click', () => {
+            // Show animation
+            sudowoodoElem.style.display = 'none';
+            animationElem.style.display = 'block';
+            
+            sudowoodo.nutrients = Math.min(100, sudowoodo.nutrients + 15);
+            
+            // Create berry/rock particles
+            createParticles('berry', 10);
+            
+            messageElem.textContent = `${sudowoodo.name} enjoys the mineral-rich berry!`;
+            
+            // Return to static sprite after animation
+            setTimeout(() => {
+                sudowoodoElem.style.display = 'block';
+                animationElem.style.display = 'none';
+                updateStats();
+            }, 2000);
+        });
+        
+        // Water Sudowoodo
+        waterButton.addEventListener('click', () => {
+            // Show animation
+            sudowoodoElem.style.display = 'none';
+            animationElem.style.display = 'block';
+            
+            sudowoodo.hydration = Math.min(100, sudowoodo.hydration + 20);
+            
+            // Create water drop particles
+            createParticles('water', 15);
+            
+            messageElem.textContent = `${sudowoodo.name} likes pretending the water doesn't bother it!`;
+            
+            // Return to static sprite after animation
+            setTimeout(() => {
+                sudowoodoElem.style.display = 'block';
+                animationElem.style.display = 'none';
+                updateStats();
+            }, 2000);
+        });
+        
+        // Click on Sudowoodo
+        sudowoodoElem.addEventListener('click', () => {
+            // Small dance animation
+            sudowoodoElem.style.transform = 'translate(-50%, -55%)';
+            setTimeout(() => {
+                sudowoodoElem.style.transform = 'translate(-48%, -50%)';
+                setTimeout(() => {
+                    sudowoodoElem.style.transform = 'translate(-52%, -50%)';
+                    setTimeout(() => {
+                        sudowoodoElem.style.transform = 'translate(-50%, -50%)';
+                    }, 100);
+                }, 100);
+            }, 100);
+            
+            messageElem.textContent = "Sudo-woodo! (It barely moved, keeping up the tree disguise)";
+        });
+        
+        // Easter egg - rename Sudowoodo
+        sudowoodoElem.addEventListener('dblclick', () => {
+            const newName = prompt("Give your Sudowoodo a nickname:", sudowoodo.name);
+            if (newName && newName.trim() !== "") {
+                sudowoodo.name = newName.trim();
+                messageElem.textContent = `Your Sudowoodo is now named ${sudowoodo.name}!`;
+                updateStats();
+            }
+        });
+        
+        // Initialize
+        updateStats();
+    </script>
+</body>
+</html>
